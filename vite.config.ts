@@ -9,8 +9,11 @@ export default defineConfig({
   plugins: [tailwindcss(), react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
+  },
+  server: {
+    host: true,
   },
   test: {
     environment: 'jsdom',
