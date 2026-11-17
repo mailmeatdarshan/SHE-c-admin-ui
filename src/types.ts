@@ -8,10 +8,11 @@ export interface LoginCredentials {
 export type Credentials = LoginCredentials;
 
 export interface User {
-  id: string;
-  name: string;
+  id: number | string;
+  firstname: string;
+  lastname: string;
   email: string;
-  role?: string;
+  role: string;
 }
 
 export interface AuthResponse {
