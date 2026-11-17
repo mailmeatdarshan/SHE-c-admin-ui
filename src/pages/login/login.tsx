@@ -16,23 +16,39 @@ import {
   RiGoogleFill,
   RiGithubFill,
 } from "@remixicon/react"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import type { LoginCredentials } from "@/types"
-import { login } from "@/http/api"
+import { login, self } from "@/http/api"
 import { Alert } from "@/components/ui/alert"
+
 
 const loginUser = async (userData: LoginCredentials) => {
   const { data } = await login(userData)
   return data
 }
 
+const getself = async () => {
+  const { data } = await self()
+  return data
+}
+
 const LoginPage = () => {
+
+  const {data: selfData, refetch} = useQuery({
+    queryKey: ['self'],
+    queryFn: getself,
+    enabled: false,
+  })
 
   const { mutate, isPending, isError, error } = useMutation({
     mutationKey: ['login'],
     mutationFn: loginUser,
     onSuccess: async () => {
-      console.log("login successfull")
+      //get self
+      const { data: userData } = await refetch()
+      console.log("userData", userData)
+      //store in the state
+      console.log("Login Successfull")
     }
   })
 
