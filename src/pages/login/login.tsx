@@ -16,8 +16,28 @@ import {
   RiGoogleFill,
   RiGithubFill,
 } from "@remixicon/react"
+import { useMutation } from "@tanstack/react-query"
+import type { LoginCredentials } from "@/types"
+import { login } from "@/http/api"
+import { Alert } from "@/components/ui/alert"
+
+const loginUser = async (userData: LoginCredentials) => {
+  const { data } = await login(userData)
+  return data
+}
 
 const LoginPage = () => {
+
+  const { mutate, isPending, isError, error } = useMutation({
+    mutationKey: ['login'],
+    mutationFn: loginUser,
+    onSuccess: async () => {
+      console.log("login successfull")
+    }
+  })
+
+
+
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -25,16 +45,18 @@ const LoginPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!email || !password || isPending) return
+    mutate({ email, password, rememberMe })
   }
 
   // Paint swatches inspired by Birla Opus color studio
-  const colorSwatches = [
-    { name: "Opus Emerald", hex: "#01A373", code: "SHE-101" },
-    { name: "Sun Amber", hex: "#F59E0B", code: "SHE-204" },
-    { name: "Coral Bloom", hex: "#E11D48", code: "SHE-308" },
-    { name: "Sapphire Deep", hex: "#2563EB", code: "SHE-412" },
-    { name: "Tuscan Ochre", hex: "#D97706", code: "SHE-516" },
-  ]
+  // const colorSwatches = [
+  //   { name: "Opus Emerald", hex: "#01A373", code: "SHE-101" },
+  //   { name: "Sun Amber", hex: "#F59E0B", code: "SHE-204" },
+  //   { name: "Coral Bloom", hex: "#E11D48", code: "SHE-308" },
+  //   { name: "Sapphire Deep", hex: "#2563EB", code: "SHE-412" },
+  //   { name: "Tuscan Ochre", hex: "#D97706", code: "SHE-516" },
+  // ]
 
   return (
     <div className="min-h-screen w-full flex flex-col justify-between bg-[#F8F9FA] text-[#1E1E1E] font-sans antialiased">
@@ -48,7 +70,7 @@ const LoginPage = () => {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-lg tracking-tight text-foreground leading-none">
-                SHRI HARI ENTERPRISES
+                {/* SHRI HARI ENTERPRISES */}
               </span>
               <span className="hidden sm:inline-block text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                 Paints &amp; Colors
@@ -93,7 +115,7 @@ const LoginPage = () => {
                 <span className="text-primary">Quality that lasts.</span>
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-lg">
-                Welcome to the Shri Hari Enterprises portal. Access your color mixing formulations, dealer inventory, swatch catalogues, and dealer accounts in one place.
+                {/* Welcome to the Shri Hari Enterprises portal. Access your color mixing formulations, dealer inventory, swatch catalogues, and dealer accounts in one place. */}
               </p>
             </div>
 
@@ -102,7 +124,7 @@ const LoginPage = () => {
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Trending Palette · Color Spectrum 2026
               </p>
-              <div className="flex items-center gap-2.5 flex-wrap">
+              {/* <div className="flex items-center gap-2.5 flex-wrap">
                 {colorSwatches.map((swatch) => (
                   <div
                     key={swatch.code}
@@ -122,7 +144,7 @@ const LoginPage = () => {
                     </div>
                   </div>
                 ))}
-              </div>
+              </div> */}
             </div>
 
             {/* Trust Highlights */}
@@ -157,12 +179,15 @@ const LoginPage = () => {
                   Login
                 </h2>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Welcome to Shri Hari Enterprises Portal
+                  {/* Welcome to Shri Hari Enterprises Portal */}
                 </p>
               </div>
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
+                {isError && (
+                  <Alert title="Error" description={error?.message || "An error occurred during login"} />
+                )}
                 {/* Username or Email */}
                 <div className="space-y-1.5">
                   <Label htmlFor="username" className="text-xs font-semibold text-foreground">
@@ -248,9 +273,10 @@ const LoginPage = () => {
                 <Button
                   type="submit"
                   size="default"
-                  className="w-full h-10.5 rounded-xl bg-primary text-white hover:bg-primary/90 font-semibold shadow-sm transition-all cursor-pointer mt-2"
+                  disabled={isPending}
+                  className="w-full h-10.5 rounded-xl bg-primary text-white hover:bg-primary/90 font-semibold shadow-sm transition-all cursor-pointer mt-2 disabled:opacity-50"
                 >
-                  Sign In
+                  {isPending ? "Signing In..." : "Sign In"}
                   <RiArrowRightLine className="ml-1.5 size-4" />
                 </Button>
               </form>
@@ -292,7 +318,7 @@ const LoginPage = () => {
       </main>
 
       {/* Footer - Minimal like birlaopus */}
-      <footer className="w-full py-4 px-6 text-center text-xs text-muted-foreground border-t border-border/80 bg-white">
+      {/* <footer className="w-full py-4 px-6 text-center text-xs text-muted-foreground border-t border-border/80 bg-white">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>&copy; {new Date().getFullYear()} Shri Hari Enterprises. All Rights Reserved.</span>
           <div className="flex items-center gap-4 text-[11px]">
@@ -303,7 +329,7 @@ const LoginPage = () => {
             <span>Customer Care: +91 92235-67406</span>
           </div>
         </div>
-      </footer>
+      </footer> */}
     </div>
   )
 }
