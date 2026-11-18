@@ -11,5 +11,8 @@ export const login = (Credential: Credentials) =>
 export const self = () =>
   api.get<User>("/auth/self");
 
+export const logout = () =>
+  api.post<{ message: string }>("/auth/logout");
+
 
 export const loginRequest = login;

@@ -18,9 +18,10 @@ import {
 } from "@remixicon/react"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import type { LoginCredentials } from "@/types"
-import { login, self } from "@/http/api"
+import { login, self, logout } from "@/http/api"
 import { Alert } from "@/components/ui/alert"
 import { useAuthStore } from "@/store"
+import { usePermission } from "@/hooks/usePermission"
 
 
 const loginUser = async (userData: LoginCredentials) => {
@@ -35,12 +36,21 @@ const getself = async () => {
 
 const LoginPage = () => {
 
-  const {setUser} = useAuthStore();
+  const {isAllowed} = usePermission();
+  const {setUser, logout:logoutFromStore} = useAuthStore();
 
   const { refetch } = useQuery({
     queryKey: ['self'],
     queryFn: getself,
     enabled: false,
+  })
+
+  const { mutate: logoutMutate } = useMutation({
+    mutationKey: ['logout'],
+    mutationFn: logout,
+    onSuccess: () => {
+      logoutFromStore();
+    }
   })
 
   const { mutate, isPending, isError, error } = useMutation({
@@ -49,10 +59,21 @@ const LoginPage = () => {
     onSuccess: async () => {
       //get self
       const selfDataPromise = await refetch()
+
       if (selfDataPromise.isError) {
         console.error("Failed to fetch /auth/self:", selfDataPromise.error)
         return
       }
+
+      //logout or redirect to client ui
+      //window.location.href = "http://cleint/url"
+      //"admin","manager","customer"
+
+      if (!isAllowed(selfDataPromise.data)) {
+        logoutMutate();
+        return
+      }
+
       if (selfDataPromise.data) {
         setUser(selfDataPromise.data)
       }
