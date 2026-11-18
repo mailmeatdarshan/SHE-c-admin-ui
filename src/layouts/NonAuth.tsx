@@ -1,7 +1,12 @@
-import { Outlet } from "react-router-dom"
+import { useAuthStore } from "@/store";
+import { Navigate, Outlet } from "react-router-dom"
 
 const NonAuth = () => {
-  return (
+    const {user} = useAuthStore();
+    if(user !== null){
+        return <Navigate to="/" replace={true} />
+    }
+    return (
     <div>
         <h1>NonAuth Component</h1>
         <Outlet />
