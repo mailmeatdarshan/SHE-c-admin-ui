@@ -45,6 +45,12 @@ const LoginPage = () => {
     enabled: false,
   })
 
+  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [rememberMe, setRememberMe] = useState(false)
+  const [permissionError, setPermissionError] = useState<string | null>(null)
+
   const { mutate: logoutMutate } = useMutation({
     mutationKey: ['logout'],
     mutationFn: logout,
@@ -70,6 +76,7 @@ const LoginPage = () => {
       //"admin","manager","customer"
 
       if (!isAllowed(selfDataPromise.data)) {
+        setPermissionError("Access denied. Only admin or manager accounts can log in to the dashboard.")
         logoutMutate();
         return
       }
@@ -83,16 +90,10 @@ const LoginPage = () => {
     }
   })
 
-
-
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [rememberMe, setRememberMe] = useState(false)
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password || isPending) return
+    setPermissionError(null)
     mutate({ email, password, rememberMe })
   }
 
@@ -234,6 +235,9 @@ const LoginPage = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {isError && (
                   <Alert title="Error" description={error?.message || "An error occurred during login"} />
+                )}
+                {permissionError && (
+                  <Alert title="Access Denied" description={permissionError} />
                 )}
                 {/* Username or Email */}
                 <div className="space-y-1.5">
