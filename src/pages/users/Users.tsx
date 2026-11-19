@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { Navigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Users as UsersIcon,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import { getUsers, createUser } from "@/http/api";
 import type { User, CreateUserData } from "@/types";
+import { useAuthStore } from "@/store";
 
 // Fallback demo users for demonstration if backend is starting or offline
 const DEMO_FALLBACK_USERS: User[] = [
@@ -74,6 +76,7 @@ const DEMO_FALLBACK_USERS: User[] = [
 ];
 
 const Users = () => {
+  const { user: currentUser } = useAuthStore();
   const queryClient = useQueryClient();
 
   // Queries
@@ -90,6 +93,7 @@ const Users = () => {
       const res = await getUsers();
       return res.data;
     },
+    enabled: currentUser?.role?.toLowerCase() === "admin",
     retry: 1,
   });
 
@@ -226,6 +230,11 @@ const Users = () => {
 
     createMutation.mutate(formData);
   };
+
+  // Route & Role Protection: Only admins can view the users page
+  if (currentUser && currentUser.role?.toLowerCase() !== "admin") {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="space-y-6">

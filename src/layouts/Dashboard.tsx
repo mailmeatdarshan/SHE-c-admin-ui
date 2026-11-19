@@ -36,6 +36,7 @@ const Dashboard = () => {
         setIsOpen={setIsSidebarOpen}
         onLogout={() => logoutMutate()}
         isLoggingOut={isLoggingOut}
+        role={user.role}
       />
 
       {/* Sticky Topbar (shared across all dashboard screens) */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { RiPaletteLine } from "@remixicon/react";
+import { useAuthStore } from "@/store";
 
 export interface NavItem {
   name: string;
@@ -24,16 +25,36 @@ export interface NavItem {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const SIDEBAR_ITEMS: NavItem[] = [
-  { name: "Home", path: "/", icon: Home },
-  { name: "Shop", path: "/shop", icon: Store },
-  { name: "Orders", path: "/orders", icon: ShoppingBag },
-  { name: "Products", path: "/products", icon: Package },
-  { name: "Users", path: "/users", icon: Users, dividerAfter: true },
-  { name: "Analytics", path: "/analytics", icon: BarChart2 },
-  { name: "Promos", path: "/promos", icon: Tag },
-  { name: "Settings", path: "/settings", icon: Settings2 },
-];
+export const getMenuItems = (role?: string): NavItem[] => {
+  const isAdmin = role?.toLowerCase() === "admin";
+
+  const items: NavItem[] = [
+    { name: "Home", path: "/", icon: Home },
+    { name: "Shop", path: "/shop", icon: Store },
+    { name: "Orders", path: "/orders", icon: ShoppingBag },
+    { name: "Products", path: "/products", icon: Package, dividerAfter: !isAdmin },
+  ];
+
+  if (isAdmin) {
+    items.push({
+      name: "Users",
+      path: "/users",
+      icon: Users,
+      dividerAfter: true,
+    });
+  }
+
+  items.push(
+    { name: "Analytics", path: "/analytics", icon: BarChart2 },
+    { name: "Promos", path: "/promos", icon: Tag },
+    { name: "Settings", path: "/settings", icon: Settings2 }
+  );
+
+  return items;
+};
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const SIDEBAR_ITEMS: NavItem[] = getMenuItems("admin");
 
 export const CustomSidebarIcon = () => (
   <svg
@@ -183,6 +204,7 @@ interface SidebarProps {
   setIsOpen: (open: boolean) => void;
   onLogout: () => void;
   isLoggingOut?: boolean;
+  role?: string;
 }
 
 const Sidebar = ({
@@ -190,6 +212,7 @@ const Sidebar = ({
   setIsOpen,
   onLogout,
   isLoggingOut,
+  role: propRole,
 }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -197,8 +220,12 @@ const Sidebar = ({
   const isMobile = useIsMobile();
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
 
+  const { user } = useAuthStore();
+  const role = propRole ?? user?.role;
+  const menuItems = useMemo(() => getMenuItems(role), [role]);
+
   const activePath =
-    SIDEBAR_ITEMS.find((item) =>
+    menuItems.find((item) =>
       item.path === "/"
         ? location.pathname === "/"
         : location.pathname.startsWith(item.path)
@@ -393,7 +420,7 @@ const Sidebar = ({
           }}
           onMouseLeave={() => setHoveredPath(null)}
         >
-          {SIDEBAR_ITEMS.map((item) => {
+          {menuItems.map((item) => {
             const isActive = item.path === activePath;
             const isHovered =
               hoveredPath !== null ? item.path === hoveredPath : false;
