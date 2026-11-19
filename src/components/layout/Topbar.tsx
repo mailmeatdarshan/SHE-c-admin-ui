@@ -8,7 +8,6 @@ import {
   Settings,
   User as UserIcon,
   CheckCheck,
-  Sparkles,
 } from "lucide-react";
 import { RiPaletteLine } from "@remixicon/react";
 import type { User } from "@/types";

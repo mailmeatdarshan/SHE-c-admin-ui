@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import Loginpage from "./pages/login/login";
 import SectionPlaceholder from "./pages/SectionPlaceholder";
+import Users from "./pages/users/Users";
 import Dashboard from "./layouts/Dashboard";
 import NonAuth from "./layouts/NonAuth";
 import Root from "./layouts/Root";
@@ -48,12 +49,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "users",
-            element: (
-              <SectionPlaceholder
-                title="Users"
-                description="Manage admin, manager, and dealer accounts."
-              />
-            ),
+            element: <Users />,
           },
           {
             path: "analytics",

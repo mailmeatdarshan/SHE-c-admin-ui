@@ -13,6 +13,16 @@ export interface User {
   lastname: string;
   email: string;
   role: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateUserData {
+  firstname: string;
+  lastname: string;
+  email: string;
+  password: string;
+  role?: string;
 }
 
 export interface AuthResponse {
