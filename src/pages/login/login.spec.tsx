@@ -24,7 +24,7 @@ const renderLoginPage = () => {
 describe("Login page", () => {
   it("should render the required fields", () => {
     renderLoginPage()
-    expect(screen.getByPlaceholderText("Username or email")).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/Username or email|admin@she\.space/i)).toBeInTheDocument()
     expect(screen.getByPlaceholderText("Password")).toBeInTheDocument()
     expect(screen.getByRole("checkbox", { name: "Remember me" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Sign In" })).toBeInTheDocument()
