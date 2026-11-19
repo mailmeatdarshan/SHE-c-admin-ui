@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Users as UsersIcon,
   UserPlus,
@@ -18,6 +19,8 @@ import {
   Lock,
   CheckCircle2,
   SlidersHorizontal,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { getUsers, createUser } from "@/http/api";
 import type { User, CreateUserData } from "@/types";
@@ -103,8 +106,9 @@ const Users = () => {
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [copiedEmailId, setCopiedEmailId] = useState<number | string | null>(null);
 
-  // Modal State
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  // Drawer State
+  const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState<CreateUserData>({
     firstname: "",
     lastname: "",
@@ -115,6 +119,25 @@ const Users = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
+  // Prevent background scroll & listen for Escape key when drawer is open
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isAddDrawerOpen) {
+        setIsAddDrawerOpen(false);
+      }
+    };
+    if (isAddDrawerOpen) {
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleKeyDown);
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isAddDrawerOpen]);
+
   // Create User Mutation
   const createMutation = useMutation({
     mutationFn: (newUserData: CreateUserData) => createUser(newUserData),
@@ -123,7 +146,7 @@ const Users = () => {
       setFormError(null);
       queryClient.invalidateQueries({ queryKey: ["users"] });
       setTimeout(() => {
-        setIsAddModalOpen(false);
+        setIsAddDrawerOpen(false);
         setFormSuccess(null);
         setFormData({
           firstname: "",
@@ -275,7 +298,7 @@ const Users = () => {
             onClick={() => {
               setFormError(null);
               setFormSuccess(null);
-              setIsAddModalOpen(true);
+              setIsAddDrawerOpen(true);
             }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
@@ -678,169 +701,291 @@ const Users = () => {
         </div>
       </div>
 
-      {/* Add User Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div
-            className="w-full max-w-md rounded-2xl bg-white border border-border shadow-2xl p-6 relative animate-in fade-in zoom-in-95 duration-150"
-            role="dialog"
-            aria-modal="true"
-          >
-            {/* Close button */}
-            <button
-              type="button"
-              onClick={() => setIsAddModalOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-            >
-              <X className="size-4" />
-            </button>
+      {/* Right-Side Slide-Over Drawer for Adding Users */}
+      <AnimatePresence>
+        {isAddDrawerOpen && (
+          <div className="fixed inset-0 z-50 overflow-hidden">
+            {/* Backdrop Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsAddDrawerOpen(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-pointer"
+              aria-hidden="true"
+            />
 
-            {/* Modal Header */}
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <UserPlus className="size-5" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-foreground">
-                  Create New User
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Provision login credentials on Auth Service.
-                </p>
-              </div>
-            </div>
-
-            {/* Form Error Banner */}
-            {formError && (
-              <div className="mt-4 p-3 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive text-xs flex items-start gap-2">
-                <AlertCircle className="size-4 shrink-0 mt-0.5" />
-                <span>{formError}</span>
-              </div>
-            )}
-
-            {/* Form Success Banner */}
-            {formSuccess && (
-              <div className="mt-4 p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 text-xs flex items-center gap-2">
-                <CheckCircle2 className="size-4 shrink-0" />
-                <span>{formSuccess}</span>
-              </div>
-            )}
-
-            {/* Form Inputs */}
-            <form onSubmit={handleCreateSubmit} className="mt-4 space-y-3.5">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    First Name
-                  </label>
-                  <div className="relative">
-                    <UserIcon className="size-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Ramesh"
-                      value={formData.firstname}
-                      onChange={(e) =>
-                        setFormData({ ...formData, firstname: e.target.value })
-                      }
-                      className="w-full h-9 pl-9 pr-3 rounded-xl border border-border/80 bg-white text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
-                    />
+            {/* Slide-over Drawer Panel */}
+            <div className="fixed inset-y-0 right-0 max-w-full flex pl-10 pointer-events-none">
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 280 }}
+                className="w-screen max-w-md bg-white border-l border-border/80 shadow-2xl flex flex-col pointer-events-auto h-full"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="drawer-title"
+              >
+                {/* Drawer Header */}
+                <div className="px-6 py-5 border-b border-border/80 flex items-center justify-between bg-white shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <UserPlus className="size-5" />
+                    </div>
+                    <div>
+                      <h2
+                        id="drawer-title"
+                        className="text-base font-bold text-foreground"
+                      >
+                        Create New User
+                      </h2>
+                      <p className="text-xs text-muted-foreground">
+                        Provision account on SHE Auth Microservice.
+                      </p>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddDrawerOpen(false)}
+                    className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                    aria-label="Close drawer"
+                  >
+                    <X className="size-4" />
+                  </button>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Patel"
-                    value={formData.lastname}
-                    onChange={(e) =>
-                      setFormData({ ...formData, lastname: e.target.value })
-                    }
-                    className="w-full h-9 px-3 rounded-xl border border-border/80 bg-white text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="size-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="email"
-                    required
-                    placeholder="e.g. ramesh.patel@shepaints.com"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    className="w-full h-9 pl-9 pr-3 rounded-xl border border-border/80 bg-white text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  Password (min 8 characters)
-                </label>
-                <div className="relative">
-                  <Lock className="size-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="password"
-                    required
-                    minLength={8}
-                    placeholder="••••••••••••"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
-                    className="w-full h-9 pl-9 pr-3 rounded-xl border border-border/80 bg-white text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  Role Assignment
-                </label>
-                <select
-                  value={formData.role}
-                  onChange={(e) =>
-                    setFormData({ ...formData, role: e.target.value })
-                  }
-                  className="w-full h-9 px-3 rounded-xl border border-border/80 bg-white text-xs text-foreground focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 cursor-pointer"
+                {/* Drawer Body (Form) */}
+                <form
+                  onSubmit={handleCreateSubmit}
+                  className="flex-1 flex flex-col justify-between overflow-hidden"
                 >
-                  <option value="manager">Branch Manager (Regional Operations)</option>
-                  <option value="admin">Administrator (Full Access)</option>
-                  <option value="customer">Dealer / Customer (Orders &amp; Stock)</option>
-                </select>
-              </div>
+                  <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+                    {/* Error Notice */}
+                    {formError && (
+                      <div className="p-3.5 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive text-xs flex items-start gap-2.5 animate-in fade-in duration-150">
+                        <AlertCircle className="size-4 shrink-0 mt-0.5" />
+                        <div className="flex-1 leading-relaxed">{formError}</div>
+                      </div>
+                    )}
 
-              <div className="pt-2 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-border/80 text-xs font-semibold text-muted-foreground hover:bg-muted/50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                  className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 cursor-pointer disabled:opacity-60"
-                >
-                  {createMutation.isPending ? "Creating..." : "Save User"}
-                </button>
-              </div>
-            </form>
+                    {/* Success Notice */}
+                    {formSuccess && (
+                      <div className="p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 text-xs flex items-center gap-2.5 animate-in fade-in duration-150">
+                        <CheckCircle2 className="size-4 shrink-0" />
+                        <span className="font-medium">{formSuccess}</span>
+                      </div>
+                    )}
+
+                    {/* Role Selection (Visual Cards) */}
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-2">
+                        Assign Platform Role
+                      </label>
+                      <div className="grid grid-cols-1 gap-2.5">
+                        {[
+                          {
+                            id: "manager",
+                            title: "Branch Manager",
+                            desc: "Regional orders dispatch and warehouse stock control",
+                            icon: Briefcase,
+                          },
+                          {
+                            id: "admin",
+                            title: "Administrator",
+                            desc: "Full root console control, dealer pricing, and staff roles",
+                            icon: ShieldCheck,
+                          },
+                          {
+                            id: "customer",
+                            title: "Dealer / Customer",
+                            desc: "Authorized paint distributors and verified storefronts",
+                            icon: Store,
+                          },
+                        ].map((roleOption) => {
+                          const isSelected = formData.role === roleOption.id;
+                          const RoleIcon = roleOption.icon;
+                          return (
+                            <div
+                              key={roleOption.id}
+                              onClick={() =>
+                                setFormData({ ...formData, role: roleOption.id })
+                              }
+                              className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-3 ${
+                                isSelected
+                                  ? "border-primary bg-primary/[0.04] ring-1 ring-primary/30"
+                                  : "border-border/80 bg-white hover:border-border hover:bg-muted/30"
+                              }`}
+                            >
+                              <div
+                                className={`size-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                                  isSelected
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted text-muted-foreground"
+                                }`}
+                              >
+                                <RoleIcon className="size-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-foreground">
+                                    {roleOption.title}
+                                  </span>
+                                  {isSelected && (
+                                    <span className="size-4 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">
+                                      <Check className="size-2.5" />
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                                  {roleOption.desc}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Name Fields */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-1.5">
+                          First Name <span className="text-destructive">*</span>
+                        </label>
+                        <div className="relative">
+                          <UserIcon className="size-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Ramesh"
+                            value={formData.firstname}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                firstname: e.target.value,
+                              })
+                            }
+                            className="w-full h-10 pl-9 pr-3 rounded-xl border border-border/80 bg-white text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-1.5">
+                          Last Name <span className="text-destructive">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Patel"
+                          value={formData.lastname}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              lastname: e.target.value,
+                            })
+                          }
+                          className="w-full h-10 px-3 rounded-xl border border-border/80 bg-white text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email Field */}
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1.5">
+                        Email Address <span className="text-destructive">*</span>
+                      </label>
+                      <div className="relative">
+                        <Mail className="size-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="email"
+                          required
+                          placeholder="e.g. ramesh.patel@shepaints.com"
+                          value={formData.email}
+                          onChange={(e) =>
+                            setFormData({ ...formData, email: e.target.value })
+                          }
+                          className="w-full h-10 pl-9 pr-3 rounded-xl border border-border/80 bg-white text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition-all"
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Login instructions and account notifications will be sent to this address.
+                      </p>
+                    </div>
+
+                    {/* Password Field */}
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1.5">
+                        Temporary Password <span className="text-destructive">*</span>
+                      </label>
+                      <div className="relative">
+                        <Lock className="size-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          required
+                          minLength={8}
+                          placeholder="Minimum 8 characters"
+                          value={formData.password}
+                          onChange={(e) =>
+                            setFormData({ ...formData, password: e.target.value })
+                          }
+                          className="w-full h-10 pl-9 pr-10 rounded-xl border border-border/80 bg-white text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                          tabIndex={-1}
+                          title={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="size-3.5" />
+                          ) : (
+                            <Eye className="size-3.5" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Must contain at least 8 characters. The user can update it anytime in settings.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Drawer Sticky Footer */}
+                  <div className="px-6 py-4 border-t border-border/80 bg-muted/10 flex items-center justify-end gap-3 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddDrawerOpen(false)}
+                      className="px-4 py-2 rounded-xl border border-border/80 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={createMutation.isPending}
+                      className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 cursor-pointer disabled:opacity-60 flex items-center gap-2"
+                    >
+                      {createMutation.isPending ? (
+                        <>
+                          <RefreshCw className="size-3.5 animate-spin" />
+                          <span>Creating User...</span>
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="size-3.5" />
+                          <span>Save &amp; Provision User</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 };
