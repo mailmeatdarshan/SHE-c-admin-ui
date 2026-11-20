@@ -14,7 +14,7 @@ import {
   LogOut,
   type LucideIcon,
 } from "lucide-react";
-import { RiPaletteLine } from "@remixicon/react";
+import logo from "@/assets/logo.jpg";
 import { useAuthStore } from "@/store";
 
 export interface NavItem {
@@ -326,48 +326,33 @@ const Sidebar = ({
           }}
         >
           {!isMobile && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div
+            <button
+              type="button"
+              onClick={() => {
+                navigate("/");
+                setIsOpen(false);
+              }}
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+              }}
+              title="Shri Hari Enterprises"
+            >
+              <img
+                src={logo}
+                alt="Shri Hari Enterprises"
                 style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  background: "linear-gradient(135deg, #F97316 0%, #EA580C 100%)",
-                  color: "#FFFFFF",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 2px 10px rgba(249, 115, 22, 0.35)",
+                  height: 40,
+                  width: "auto",
+                  maxWidth: 180,
+                  objectFit: "contain",
                 }}
-              >
-                <RiPaletteLine size={18} />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <span
-                  style={{
-                    color: "#0F172A",
-                    fontSize: 15,
-                    fontWeight: 700,
-                    letterSpacing: "0.06em",
-                    lineHeight: 1.1,
-                  }}
-                >
-                  SHRI HARI
-                </span>
-                <span
-                  style={{
-                    color: "#EA580C",
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    marginTop: 2,
-                  }}
-                >
-                  Admin Console
-                </span>
-              </div>
-            </div>
+              />
+            </button>
           )}
 
           {isMobile ? (

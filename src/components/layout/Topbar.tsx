@@ -9,7 +9,7 @@ import {
   User as UserIcon,
   CheckCheck,
 } from "lucide-react";
-import { RiPaletteLine } from "@remixicon/react";
+import logo from "@/assets/logo.jpg";
 import type { User } from "@/types";
 import { CustomSidebarIcon, SIDEBAR_ITEMS } from "./Sidebar";
 
@@ -166,28 +166,18 @@ const Topbar = ({
           <CustomSidebarIcon />
         </button>
 
-        {/* Company Logo & Name */}
+        {/* Company Logo */}
         <button
           type="button"
           onClick={() => navigate("/")}
-          className="flex items-center gap-2.5 text-left cursor-pointer group min-w-0"
+          className="flex items-center text-left cursor-pointer group min-w-0"
+          title="Shri Hari Enterprises"
         >
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/20 group-hover:scale-105 transition-transform">
-            <RiPaletteLine className="size-5" />
-          </div>
-          <div className="hidden sm:block truncate">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm lg:text-base tracking-tight text-foreground leading-none">
-                SHRI HARI ENTERPRISES
-              </span>
-              <span className="hidden xl:inline-block text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                Paints &amp; Colors
-              </span>
-            </div>
-            <p className="text-[11px] text-muted-foreground font-medium leading-tight mt-0.5">
-              Admin Dashboard
-            </p>
-          </div>
+          <img
+            src={logo}
+            alt="Shri Hari Enterprises"
+            className="h-10 sm:h-11 md:h-12 w-auto max-w-[220px] sm:max-w-[260px] md:max-w-[300px] object-contain group-hover:scale-105 transition-transform drop-shadow-sm"
+          />
         </button>
 
         {/* Breadcrumb Navigation: Dashboard / <Section> */}

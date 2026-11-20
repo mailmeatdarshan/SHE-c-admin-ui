@@ -14,6 +14,8 @@ import type { LoginCredentials } from "@/types"
 import { login, self, logout } from "@/http/api"
 import { useAuthStore } from "@/store"
 import { usePermission } from "@/hooks/usePermission"
+import sheBanner from "@/assets/SHE.jpg"
+import logo from "@/assets/logo.jpg"
 
 // Peacock Feather (Mor Pankh) Watermark SVG component
 const PeacockFeatherWatermark = ({ className }: { className?: string }) => (
@@ -150,15 +152,20 @@ const LoginPage = () => {
       <header className="relative z-10 w-full px-6 py-4 flex items-start justify-between">
         <div className="w-32 hidden md:block" />
 
-        <div className="flex flex-col items-center mx-auto md:mx-0 pt-8 sm:pt-10">
-          <div className="flex items-center gap-1">
+        <div className="flex flex-col items-center mx-auto md:mx-0 pt-6 sm:pt-8">
+          {/* <div className="flex items-center gap-1">
             <span className="font-extrabold text-2xl tracking-tight text-slate-900">
               Shri Hari Enterprises
             </span>
             <span className="text-xs font-bold text-[#ec7211] tracking-wider uppercase ml-1">
               admin
             </span>
-          </div>
+          </div> */}
+          <img
+            src={logo}
+            alt="Shri Hari Enterprises"
+            className="h-12 sm:h-20 md:h-24 w-auto max-w-[280px] sm:max-w-[360px] md:max-w-[420px] object-contain drop-shadow-sm"
+          />
         </div>
 
         {/* Top Right Utilities */}
@@ -181,7 +188,7 @@ const LoginPage = () => {
       {/* Main Container */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-6 max-w-5xl mx-auto w-full">
         {/* Announcement / Notice Box (Like AWS Sign-in is getting an update) */}
-        {showAnnouncement && (
+        {/* {showAnnouncement && (
           <div className="w-full max-w-[890px] mb-6 bg-white border border-[#0073bb]/30 rounded-xl p-3 sm:p-4 flex items-start sm:items-center justify-between gap-3 shadow-xs">
             <div className="flex items-start sm:items-center gap-2.5 min-w-0">
               <RiInformationLine className="size-5 text-[#0073bb] shrink-0 mt-0.5 sm:mt-0" />
@@ -211,74 +218,36 @@ const LoginPage = () => {
               </button>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Split Section: Left Promotional Banner + Right Sign-in Card */}
         <div className="w-full max-w-[890px] grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-          {/* LEFT: Classic Promotional Banner (AWS Lightsail style) */}
-          {/* USER NOTE: Replace this image/banner anytime! */}
-          <div className="md:col-span-7 rounded-xl overflow-hidden relative min-h-[360px] flex flex-col justify-between p-6 sm:p-8 bg-[#0a0705] border border-slate-800 text-white shadow-xs">
-            {/* Speed Streak / Light Wave Background */}
-            <div
-              className="absolute inset-0 z-0 pointer-events-none"
-              style={{
-                background:
-                  "radial-gradient(ellipse at 80% 20%, rgba(249, 115, 22, 0.45) 0%, rgba(180, 83, 9, 0.15) 45%, rgba(10, 7, 5, 0.95) 75%)",
-              }}
+          {/* LEFT: Promotional Banner with SHE.jpg Background */}
+          <div className="md:col-span-7 rounded-xl overflow-hidden relative min-h-[360px] flex flex-col justify-end p-6 sm:p-8 border border-slate-300/80 text-white shadow-xs">
+            {/* Background Image */}
+            <img
+              src={sheBanner}
+              alt="Shri Hari Express"
+              className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
             />
+            {/* Subtle Gradient Overlay for text contrast */}
+            <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-t from-black/90 via-black/55 to-black/15" />
 
-            {/* Top Content */}
+            {/* Bottom Content */}
             <div className="relative z-10 max-w-sm">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight drop-shadow-sm">
                 Shri Hari Express
               </h2>
-              <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-100 mt-2 leading-relaxed drop-shadow-sm font-medium">
                 The easiest way to manage dealer inventory, retail orders, and
                 color shade formulations on SHE.
               </p>
               <button
                 type="button"
-                className="mt-4 px-3.5 py-1.5 rounded-md border border-white/50 text-xs font-medium text-white hover:bg-white/10 transition-colors"
+                className="mt-4 px-3.5 py-1.5 rounded-md border border-white/60 text-xs font-semibold text-white hover:bg-white/15 transition-colors backdrop-blur-xs cursor-pointer shadow-xs"
               >
                 Learn more &raquo;
               </button>
-            </div>
-
-            {/* Bottom Line-Art Mascot / Illustration (AWS Lightsail style robot) */}
-            <div className="relative z-10 flex justify-end items-end mt-8">
-              <svg
-                className="w-28 h-28 sm:w-36 sm:h-36 text-white/90"
-                viewBox="0 0 160 160"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                {/* Robot Head */}
-                <rect x="50" y="45" width="60" height="48" rx="10" />
-                {/* Antenna */}
-                <line x1="80" y1="45" x2="80" y2="30" />
-                <circle cx="80" cy="27" r="4" fill="currentColor" />
-                {/* Eyes */}
-                <circle cx="68" cy="64" r="5" fill="currentColor" />
-                <circle cx="92" cy="64" r="5" fill="currentColor" />
-                {/* Smile */}
-                <path d="M68 78 Q80 88 92 78" />
-                {/* Neck */}
-                <rect x="74" y="93" width="12" height="6" />
-                {/* Body */}
-                <rect x="58" y="99" width="44" height="34" rx="6" />
-                {/* Chest badge */}
-                <line x1="72" y1="112" x2="88" y2="112" />
-                {/* Legs */}
-                <line x1="68" y1="133" x2="68" y2="148" />
-                <line x1="92" y1="133" x2="92" y2="148" />
-                {/* Thumbs Up Hand */}
-                <path d="M102 108 L116 102 L118 90 L124 90 L124 102 L128 106 L124 116 L102 118" />
-                {/* Ground dashed line */}
-                <line x1="20" y1="150" x2="140" y2="150" strokeDasharray="6 4" />
-              </svg>
             </div>
           </div>
 
