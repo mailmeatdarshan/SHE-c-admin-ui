@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -21,10 +21,28 @@ import {
   SlidersHorizontal,
   Eye,
   EyeOff,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { getUsers, createUser } from "@/http/api";
-import type { User, CreateUserData } from "@/types";
+import type { User, CreateUserData, PaginatedUsersResponse } from "@/types";
 import { useAuthStore } from "@/store";
+
+// Helper to generate pagination page numbers with smart ellipsis
+const getPageNumbers = (current: number, total: number): (number | string)[] => {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 4) {
+    return [1, 2, 3, 4, 5, "...", total];
+  }
+  if (current >= total - 3) {
+    return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+  }
+  return [1, "...", current - 1, current, current + 1, "...", total];
+};
 
 // Fallback demo users for demonstration if backend is starting or offline
 const DEMO_FALLBACK_USERS: User[] = [
@@ -81,8 +99,30 @@ const DEMO_FALLBACK_USERS: User[] = [
 const Users = () => {
   const { user: currentUser } = useAuthStore();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Queries
+  // Pagination parameters from URL search params (or default to page 1, 10 per page)
+  const currentPage = Math.max(1, Number(searchParams.get("page")) || 1);
+  const perPage = Math.min(100, Math.max(1, Number(searchParams.get("perPage")) || 10));
+
+  const setCurrentPage = useCallback((page: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("page", String(page));
+      return next;
+    });
+  }, [setSearchParams]);
+
+  const setPerPage = useCallback((newPerPage: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("perPage", String(newPerPage));
+      next.set("page", "1"); // Always reset to page 1 on page size change
+      return next;
+    });
+  }, [setSearchParams]);
+
+  // Queries: TanStack Query v5 pagination pattern
   const {
     data: fetchedUsers,
     isLoading,
@@ -91,11 +131,12 @@ const Users = () => {
     refetch,
     isFetching,
   } = useQuery({
-    queryKey: ["users"],
+    queryKey: ["users", currentPage, perPage],
     queryFn: async () => {
-      const res = await getUsers();
+      const res = await getUsers({ currentPage, perPage });
       return res.data;
     },
+    placeholderData: (previousData) => previousData,
     enabled: currentUser?.role?.toLowerCase() === "admin",
     retry: 1,
   });
@@ -145,6 +186,7 @@ const Users = () => {
       setFormSuccess("User created successfully!");
       setFormError(null);
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      setCurrentPage(1); // Return to page 1 to view the newest created user
       setTimeout(() => {
         setIsAddDrawerOpen(false);
         setFormSuccess(null);
@@ -172,25 +214,64 @@ const Users = () => {
     },
   });
 
-  // Normalize Users List
-  const usersList: User[] = useMemo(() => {
-    if (useDemoFallback) return DEMO_FALLBACK_USERS;
+  // Normalize Users List and Pagination Totals
+  const { usersList, totalUsersCount } = useMemo(() => {
+    if (useDemoFallback) {
+      const total = DEMO_FALLBACK_USERS.length;
+      const start = (currentPage - 1) * perPage;
+      const data = DEMO_FALLBACK_USERS.slice(start, start + perPage);
+      return {
+        usersList: data,
+        totalUsersCount: total,
+      };
+    }
 
+    if (!fetchedUsers) {
+      return {
+        usersList: [] as User[],
+        totalUsersCount: 0,
+      };
+    }
+
+    // Standard PaginatedResponse from auth-service
+    if (
+      typeof fetchedUsers === "object" &&
+      "data" in fetchedUsers &&
+      Array.isArray((fetchedUsers as PaginatedUsersResponse).data)
+    ) {
+      const resp = fetchedUsers as PaginatedUsersResponse;
+      return {
+        usersList: resp.data,
+        totalUsersCount: Number(resp.total) || resp.data.length,
+      };
+    }
+
+    // Direct User[] fallback if returned as raw array
     if (Array.isArray(fetchedUsers)) {
-      return fetchedUsers;
+      const arr = fetchedUsers as User[];
+      return {
+        usersList: arr,
+        totalUsersCount: arr.length,
+      };
     }
 
-    const maybeObj = fetchedUsers as Record<string, unknown> | undefined;
-    if (maybeObj) {
-      if (Array.isArray(maybeObj.users)) return maybeObj.users as User[];
-      if (Array.isArray(maybeObj.data)) return maybeObj.data as User[];
-    }
+    return {
+      usersList: [] as User[],
+      totalUsersCount: 0,
+    };
+  }, [fetchedUsers, useDemoFallback, currentPage, perPage]);
 
-    return [];
-  }, [fetchedUsers, useDemoFallback]);
+  const totalPages = Math.max(1, Math.ceil(totalUsersCount / perPage));
+
+  // Auto-correct page if current page exceeds total pages
+  useEffect(() => {
+    if (totalUsersCount > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages, totalUsersCount, setCurrentPage]);
 
   // Statistics
-  const totalCount = usersList.length;
+  const totalCount = totalUsersCount;
   const adminCount = usersList.filter(
     (u) => u.role?.toLowerCase() === "admin"
   ).length;
@@ -539,7 +620,7 @@ const Users = () => {
                   <th className="py-3.5 px-4 text-right sm:pr-6">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/60 text-xs">
+              <tbody className={`divide-y divide-border/60 text-xs transition-opacity duration-150 ${isFetching ? "opacity-60" : "opacity-100"}`}>
                 {filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-muted-foreground">
@@ -689,15 +770,135 @@ const Users = () => {
           </div>
         )}
 
-        {/* Table Footer */}
-        <div className="px-4 py-3 border-t border-border/80 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground">
-          <span>
-            Showing <strong className="text-foreground">{filteredUsers.length}</strong> of{" "}
-            <strong className="text-foreground">{totalCount}</strong> users
-          </span>
-          <span className="text-[11px]">
-            Connected to SHE Auth Microservice
-          </span>
+        {/* Table Pagination & Footer */}
+        <div className="px-4 sm:px-6 py-3.5 border-t border-border/80 bg-muted/10 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
+          {/* Left: Summary & Per Page Selector */}
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="text-muted-foreground">
+              {totalUsersCount === 0 ? (
+                <span>No users found</span>
+              ) : (
+                <span>
+                  Showing{" "}
+                  <strong className="font-semibold text-foreground">
+                    {(currentPage - 1) * perPage + 1}
+                  </strong>
+                  {" "}&ndash;{" "}
+                  <strong className="font-semibold text-foreground">
+                    {Math.min(currentPage * perPage, totalUsersCount)}
+                  </strong>
+                  {" "}of{" "}
+                  <strong className="font-semibold text-foreground">
+                    {totalUsersCount}
+                  </strong>{" "}
+                  users
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 pl-3 border-l border-border/80">
+              <span className="text-muted-foreground text-xs">Per page:</span>
+              <select
+                aria-label="Rows per page"
+                value={perPage}
+                onChange={(e) => setPerPage(Number(e.target.value))}
+                className="h-7.5 px-2 rounded-lg border border-border/80 bg-white text-xs font-medium text-foreground hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer shadow-2xs"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Right: Page Navigation Controls */}
+          <div className="flex items-center gap-1.5 self-center md:self-auto">
+            {/* First Page */}
+            <button
+              type="button"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage <= 1 || isFetching}
+              className="size-8 inline-flex items-center justify-center rounded-lg border border-border/80 bg-white text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-2xs"
+              title="First Page"
+              aria-label="First Page"
+            >
+              <ChevronsLeft className="size-4" />
+            </button>
+
+            {/* Previous Page */}
+            <button
+              type="button"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage <= 1 || isFetching}
+              className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border border-border/80 bg-white text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-2xs"
+              title="Previous Page"
+              aria-label="Previous Page"
+            >
+              <ChevronLeft className="size-4" />
+              <span className="hidden sm:inline">Prev</span>
+            </button>
+
+            {/* Page Number Pills */}
+            <div className="flex items-center gap-1">
+              {getPageNumbers(currentPage, totalPages).map((p, idx) => {
+                if (typeof p === "string") {
+                  return (
+                    <span
+                      key={`ellipsis-${idx}`}
+                      className="px-1.5 py-1 text-xs text-muted-foreground select-none"
+                    >
+                      &hellip;
+                    </span>
+                  );
+                }
+
+                const isActive = p === currentPage;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setCurrentPage(p)}
+                    disabled={isFetching}
+                    className={`size-8 inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-xs shadow-primary/25"
+                        : "border border-border/80 bg-white text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    }`}
+                    aria-current={isActive ? "page" : undefined}
+                    aria-label={`Page ${p}`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Next Page */}
+            <button
+              type="button"
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage >= totalPages || isFetching}
+              className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border border-border/80 bg-white text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-2xs"
+              title="Next Page"
+              aria-label="Next Page"
+            >
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="size-4" />
+            </button>
+
+            {/* Last Page */}
+            <button
+              type="button"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage >= totalPages || isFetching}
+              className="size-8 inline-flex items-center justify-center rounded-lg border border-border/80 bg-white text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-2xs"
+              title="Last Page"
+              aria-label="Last Page"
+            >
+              <ChevronsRight className="size-4" />
+            </button>
+          </div>
         </div>
       </div>
 

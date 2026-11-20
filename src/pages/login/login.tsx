@@ -5,9 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import {
   RiInformationLine,
-  RiCloseLine,
   RiAlertFill,
-  RiArrowRightUpLine,
 } from "@remixicon/react"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import type { LoginCredentials } from "@/types"
@@ -89,7 +87,6 @@ const LoginPage = () => {
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [permissionError, setPermissionError] = useState<string | null>(null)
-  const [showAnnouncement, setShowAnnouncement] = useState(true)
 
   const { mutate: logoutMutate } = useMutation({
     mutationKey: ["logout"],

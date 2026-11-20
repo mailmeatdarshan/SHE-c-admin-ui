@@ -25,6 +25,20 @@ export interface CreateUserData {
   role?: string;
 }
 
+export interface PaginatedResponse<T> {
+  currentPage: number;
+  perPage: number;
+  total: number;
+  data: T[];
+}
+
+export type PaginatedUsersResponse = PaginatedResponse<User>;
+
+export interface ListUsersParams {
+  currentPage?: number;
+  perPage?: number;
+}
+
 export interface AuthResponse {
   accessToken: string;
   token: string;
