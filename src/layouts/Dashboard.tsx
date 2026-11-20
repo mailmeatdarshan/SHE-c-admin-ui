@@ -1,14 +1,16 @@
-import { useState } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Outlet } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store";
 import { logout } from "@/http/api";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+import { FullScreenLoader } from "@/components/common/LoadingSpinner";
 
 const Dashboard = () => {
   const { user, logout: logoutFromStore } = useAuthStore();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const { mutate: logoutMutate, isPending: isLoggingOut } = useMutation({
@@ -24,8 +26,14 @@ const Dashboard = () => {
     },
   });
 
-  if (user === null) {
-    return <Navigate to="/auth/login" replace={true} />;
+  useEffect(() => {
+    if (user === null && !isLoggingOut) {
+      navigate("/auth/login", { replace: true });
+    }
+  }, [user, isLoggingOut, navigate]);
+
+  if (isLoggingOut || user === null) {
+    return <FullScreenLoader />;
   }
 
   return (

@@ -1,16 +1,27 @@
+import { useEffect } from "react";
+import { useNavigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "@/store";
-import { Navigate, Outlet } from "react-router-dom"
+import { FullScreenLoader } from "@/components/common/LoadingSpinner";
 
 const NonAuth = () => {
-    const {user} = useAuthStore();
-    if(user !== null){
-        return <Navigate to="/" replace={true} />
-    }
-    return (
-    <div>
-        <Outlet />
-    </div>
-  )
-}
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
 
-export default NonAuth
+  useEffect(() => {
+    if (user !== null) {
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
+
+  if (user !== null) {
+    return <FullScreenLoader />;
+  }
+
+  return (
+    <div>
+      <Outlet />
+    </div>
+  );
+};
+
+export default NonAuth;

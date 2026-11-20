@@ -1,4 +1,6 @@
 import React, { useState } from "react"
+import { Loader2 } from "lucide-react"
+import { FullScreenLoader } from "@/components/common/LoadingSpinner"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -87,6 +89,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [permissionError, setPermissionError] = useState<string | null>(null)
+  const [isNavigating, setIsNavigating] = useState(false)
 
   const { mutate: logoutMutate } = useMutation({
     mutationKey: ["logout"],
@@ -100,31 +103,40 @@ const LoginPage = () => {
     mutationKey: ["login"],
     mutationFn: loginUser,
     onSuccess: async () => {
-      const selfDataPromise = await refetch()
+      setIsNavigating(true)
+      try {
+        const selfDataPromise = await refetch()
 
-      if (selfDataPromise.isError) {
-        console.error("Failed to fetch /auth/self:", selfDataPromise.error)
-        return
-      }
+        if (selfDataPromise.isError) {
+          console.error("Failed to fetch /auth/self:", selfDataPromise.error)
+          setIsNavigating(false)
+          return
+        }
 
-      if (!isAllowed(selfDataPromise.data)) {
-        setPermissionError(
-          "Access denied. Only admin or manager accounts can log in to the dashboard."
-        )
-        logoutMutate()
-        return
-      }
+        if (!isAllowed(selfDataPromise.data)) {
+          setPermissionError(
+            "Access denied. Only admin or manager accounts can log in to the dashboard."
+          )
+          logoutMutate()
+          setIsNavigating(false)
+          return
+        }
 
-      if (selfDataPromise.data) {
-        setUser(selfDataPromise.data)
+        if (selfDataPromise.data) {
+          setUser(selfDataPromise.data)
+        }
+      } catch {
+        setIsNavigating(false)
       }
-      console.log("Login Successful, User:", selfDataPromise.data)
+    },
+    onError: () => {
+      setIsNavigating(false)
     },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email || !password || isPending) return
+    if (!email || !password || isPending || isNavigating) return
     setPermissionError(null)
     mutate({ email, password, rememberMe })
   }
@@ -134,6 +146,10 @@ const LoginPage = () => {
     (isError
       ? error?.message || "Invalid credentials. Please verify your details."
       : null)
+
+  if (isNavigating) {
+    return <FullScreenLoader />
+  }
 
   return (
     <div className="min-h-screen w-full bg-[#fbfbfb] text-[#16191f] font-sans flex flex-col justify-between relative selection:bg-[#ec7211] selection:text-white">
@@ -351,7 +367,14 @@ const LoginPage = () => {
                   disabled={isPending}
                   className="w-full mt-2 h-9 rounded-md bg-[#ec7211] hover:bg-[#eb5f07] active:bg-[#d95604] text-white font-medium text-sm shadow-xs border border-[#d9650b] cursor-pointer transition-colors"
                 >
-                  {isPending ? "Signing in..." : "Sign In"}
+                  {isPending ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="size-4 animate-spin text-white" />
+                      <span>Signing in...</span>
+                    </span>
+                  ) : (
+                    "Sign In"
+                  )}
                 </Button>
               </form>
             </div>

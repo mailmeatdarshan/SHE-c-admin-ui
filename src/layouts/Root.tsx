@@ -4,6 +4,7 @@ import { Outlet } from "react-router-dom"
 import { self } from "@/http/api"
 import { useAuthStore } from "@/store"
 import { usePermission } from "@/hooks/usePermission"
+import { FullScreenLoader } from "@/components/common/LoadingSpinner"
 
 const getself = async () => {
   const { data } = await self()
@@ -32,7 +33,7 @@ const Root = () => {
     })
 
     if (isLoading) {
-        return <div>Loading...</div>
+        return <FullScreenLoader />
     }
 
     return <Outlet />

@@ -29,6 +29,10 @@ import {
 import { getUsers, createUser } from "@/http/api";
 import type { User, CreateUserData, PaginatedUsersResponse } from "@/types";
 import { useAuthStore } from "@/store";
+import {
+  TablePaginationLoader,
+  FullScreenLoader,
+} from "@/components/common/LoadingSpinner";
 
 // Helper to generate pagination page numbers with smart ellipsis
 const getPageNumbers = (current: number, total: number): (number | string)[] => {
@@ -336,7 +340,11 @@ const Users = () => {
   };
 
   // Route & Role Protection: Only admins can view the users page
-  if (currentUser && currentUser.role?.toLowerCase() !== "admin") {
+  if (!currentUser) {
+    return <FullScreenLoader />;
+  }
+
+  if (currentUser.role?.toLowerCase() !== "admin") {
     return <Navigate to="/" replace />;
   }
 
@@ -579,49 +587,74 @@ const Users = () => {
           </div>
         </div>
 
-        {/* Loading State Skeleton */}
-        {isLoading && (
-          <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between pb-2">
-              <div className="h-4 w-32 bg-muted/60 rounded animate-pulse" />
-              <div className="h-4 w-20 bg-muted/60 rounded animate-pulse" />
-            </div>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between py-3 border-b border-border/50 gap-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-full bg-muted/60 animate-pulse shrink-0" />
-                  <div className="space-y-1.5">
-                    <div className="h-3.5 w-36 bg-muted/60 rounded animate-pulse" />
-                    <div className="h-2.5 w-24 bg-muted/40 rounded animate-pulse" />
-                  </div>
-                </div>
-                <div className="h-3 w-48 bg-muted/40 rounded animate-pulse hidden md:block" />
-                <div className="h-6 w-20 bg-muted/60 rounded-full animate-pulse" />
-                <div className="h-6 w-16 bg-muted/60 rounded-full animate-pulse" />
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Top Progress Bar during page fetching */}
+        <div className="h-0.5 w-full bg-transparent overflow-hidden relative">
+          {isFetching && (
+            <div className="h-full w-full bg-gradient-to-r from-primary via-amber-400 to-primary animate-pulse" />
+          )}
+        </div>
 
-        {/* Table Content */}
-        {!isLoading && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border/80 bg-muted/20 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  <th className="py-3.5 px-4 sm:px-6">User</th>
-                  <th className="py-3.5 px-4">Contact</th>
-                  <th className="py-3.5 px-4">Role</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4 hidden lg:table-cell">Created</th>
-                  <th className="py-3.5 px-4 text-right sm:pr-6">Actions</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y divide-border/60 text-xs transition-opacity duration-150 ${isFetching ? "opacity-60" : "opacity-100"}`}>
-                {filteredUsers.length === 0 ? (
+        {/* Stable Table Container with Fixed Min-Height to eliminate layout jumps */}
+        <div className="relative min-h-[460px] overflow-x-auto flex flex-col justify-between">
+          {/* Pagination Spinner Overlay when switching pages */}
+          {isFetching && !isLoading && (
+            <TablePaginationLoader message={`Loading page ${currentPage}...`} />
+          )}
+
+          {/* Initial Loading Overlay when first fetching directory */}
+          {isLoading && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/75 backdrop-blur-[1px]">
+              <div className="size-8 rounded-full border-2 border-primary/25 border-t-primary animate-spin" />
+            </div>
+          )}
+
+          <table className="w-full text-left border-collapse min-w-[700px]">
+            <thead>
+              <tr className="border-b border-border/80 bg-muted/20 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <th className="py-3.5 px-4 sm:px-6">User</th>
+                <th className="py-3.5 px-4">Contact</th>
+                <th className="py-3.5 px-4">Role</th>
+                <th className="py-3.5 px-4">Status</th>
+                <th className="py-3.5 px-4 hidden lg:table-cell">Created</th>
+                <th className="py-3.5 px-4 text-right sm:pr-6">Actions</th>
+              </tr>
+            </thead>
+            <tbody
+              className={`divide-y divide-border/60 text-xs transition-opacity duration-200 ${
+                isFetching ? "opacity-35 pointer-events-none" : "opacity-100"
+              }`}
+            >
+              {isLoading ? (
+                // Stable Skeleton Rows with identical column dimensions
+                Array.from({ length: Math.min(perPage, 8) }).map((_, i) => (
+                  <tr key={`skeleton-${i}`} className="animate-pulse">
+                    <td className="py-3.5 px-4 sm:px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-xl bg-muted/70 shrink-0" />
+                        <div className="space-y-1.5">
+                          <div className="h-3.5 w-32 bg-muted/70 rounded" />
+                          <div className="h-2.5 w-20 bg-muted/40 rounded" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="h-3 w-40 bg-muted/60 rounded" />
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="h-6 w-20 bg-muted/60 rounded-full" />
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="h-5 w-16 bg-muted/60 rounded-full" />
+                    </td>
+                    <td className="py-3.5 px-4 hidden lg:table-cell">
+                      <div className="h-3 w-24 bg-muted/40 rounded" />
+                    </td>
+                    <td className="py-3.5 px-4 text-right sm:pr-6">
+                      <div className="h-7 w-20 bg-muted/50 rounded-lg ml-auto" />
+                    </td>
+                  </tr>
+                ))
+              ) : filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-muted-foreground">
                       <div className="flex flex-col items-center justify-center gap-2">
@@ -768,7 +801,6 @@ const Users = () => {
               </tbody>
             </table>
           </div>
-        )}
 
         {/* Table Pagination & Footer */}
         <div className="px-4 sm:px-6 py-3.5 border-t border-border/80 bg-muted/10 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
